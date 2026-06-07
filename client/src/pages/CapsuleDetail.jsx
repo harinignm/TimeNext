@@ -14,15 +14,20 @@ const CapsuleDetail = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
+  const [fetchError, setFetchError] = useState('');
 
   const fetchCapsule = async () => {
     try {
-      const res = await axios.get(`${import.meta.env.VITE_API_URL}/api/capsule/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const targetUrl = `${import.meta.env.VITE_API_URL || ''}/api/capsule/${id}`;
+      const res = await axios.get(targetUrl, { headers });
       setCapsule(res.data);
     } catch (err) {
       console.error(err);
+      setFetchError(err.message || 'Unknown network error');
     } finally {
       setLoading(false);
     }
@@ -36,9 +41,13 @@ const CapsuleDetail = () => {
     e.preventDefault();
     setIsVerifying(true);
     try {
-      const res = await axios.post(`${import.meta.env.VITE_API_URL}/api/capsule/verify-password`, 
+      const headers = {};
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/capsule/verify-password`, 
         { id, password },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers }
       );
       setCapsule({ ...res.data.capsule, isLocked: false });
     } catch (err) {
@@ -49,9 +58,29 @@ const CapsuleDetail = () => {
   };
 
   if (loading) return <div className="pt-40 text-center">Loading Capsule...</div>;
-  if (!capsule) return <div className="pt-40 text-center">Capsule not found.</div>;
+  
+  if (!capsule) {
+    return (
+      <div className="pt-40 text-center text-white px-6">
+        <h2 className="text-2xl font-bold text-red-500 mb-4">Capsule not found or connection error.</h2>
+        {fetchError && (
+          <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-xl mx-auto text-left font-mono text-sm space-y-2">
+            <p className="text-red-400 font-bold">Error: {fetchError}</p>
+            <p className="text-slate-400">Target URL: {import.meta.env.VITE_API_URL || '(empty)'}/api/capsule/{id}</p>
+            <p className="text-slate-400">VITE_API_URL Value: {import.meta.env.VITE_API_URL || 'undefined'}</p>
+            <p className="text-slate-500 text-xs mt-4">
+              💡 <b>How to fix this:</b><br />
+              1. Make sure your server URL in the environment variables is set correctly.<br />
+              2. Make sure it starts with <b>https://</b> (e.g. <i>https://timenext-server.vercel.app</i>).<br />
+              3. Remember to redeploy the frontend client on Vercel after saving changes!
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
-  const isActuallyUnlocked = new Date() >= new Date(capsule.openingDateTime);
+  const isActuallyUnlocked = !capsule.isLocked;
 
   return (
     <div className="pt-32 pb-20 px-6">
