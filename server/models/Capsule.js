@@ -8,6 +8,9 @@ const capsuleSchema = new mongoose.Schema({
   image: { type: String }, // Base64 string
   openingDateTime: { type: Date, required: true },
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-}, { timestamps: true });
+}, { 
+  timestamps: true,
+  bufferCommands: false 
+});
 
 module.exports = mongoose.model('Capsule', capsuleSchema);

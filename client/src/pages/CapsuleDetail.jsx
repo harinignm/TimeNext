@@ -25,7 +25,9 @@ const CapsuleDetail = () => {
       setCapsule(res.data);
     } catch (err) {
       console.error(err);
-      setFetchError(err.message || 'Unknown network error');
+      const isConfigError = !import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL === 'undefined';
+      const errorMessage = err.response?.data?.error || err.message || 'Unknown network error';
+      setFetchError(isConfigError ? 'VITE_API_URL is not set. The frontend doesn\'t know where the backend is.' : errorMessage);
     } finally {
       setLoading(false);
     }

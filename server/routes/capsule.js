@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const Capsule = require('../models/Capsule');
 const auth = require('../middleware/auth');
@@ -26,8 +27,17 @@ router.get('/user', auth, async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const capsule = await Capsule.findById(req.params.id);
-    if (!capsule) return res.status(404).send();
+    const { id } = req.params;
+    
+    // Validate if the ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: 'Invalid capsule ID format' });
+    }
+
+    const capsule = await Capsule.findById(id);
+    if (!capsule) {
+      return res.status(404).json({ error: 'Capsule not found' });
+    }
     
     const openingTime = new Date(capsule.openingDateTime).getTime();
     const isUnlocked = new Date() >= openingTime;
@@ -40,7 +50,8 @@ router.get('/:id', async (req, res) => {
 
     res.send({ ...capsule.toObject(), isLocked: false });
   } catch (error) {
-    res.status(500).send(error);
+    console.error('Error fetching capsule:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 
