@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ override: true });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
@@ -44,11 +44,20 @@ if (!process.env.VERCEL) {
 module.exports = app;
 
 // Database Connection
-console.log('Attempting to connect to MongoDB Atlas...');
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
+const connectDB = async () => {
+  const maskedURI = process.env.MONGODB_URI ? process.env.MONGODB_URI.replace(/:([^@]+)@/, ':****@') : 'undefined';
+  console.log('Attempting to connect to MongoDB Atlas...');
+  
+  try {
+    if (!process.env.MONGODB_URI) {
+      throw new Error('MONGODB_URI is not defined in environment variables');
+    }
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('✅ Connected to MongoDB Atlas');
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('❌ MongoDB connection error:', err.message);
-  });
+    console.error('Please check your MONGODB_URI in .env and ensure your IP is whitelisted in MongoDB Atlas.');
+  }
+};
+
+connectDB();

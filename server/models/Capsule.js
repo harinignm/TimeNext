@@ -7,7 +7,6 @@ const capsuleSchema = new mongoose.Schema({
   message: { type: String, required: true },
   image: { type: String }, // Base64 string
   openingDateTime: { type: Date, required: true },
-  capsulePassword: { type: String }, // Hashed if exists
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 }, { timestamps: true });
 

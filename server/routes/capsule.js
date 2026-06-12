@@ -7,9 +7,6 @@ const auth = require('../middleware/auth');
 router.post('/create', auth, async (req, res) => {
   try {
     const capsuleData = { ...req.body, userId: req.user.id };
-    if (capsuleData.capsulePassword) {
-      capsuleData.capsulePassword = await bcrypt.hash(capsuleData.capsulePassword, 10);
-    }
     const capsule = new Capsule(capsuleData);
     await capsule.save();
     res.status(201).send(capsule);
@@ -32,11 +29,12 @@ router.get('/:id', async (req, res) => {
     const capsule = await Capsule.findById(req.params.id);
     if (!capsule) return res.status(404).send();
     
-    const isUnlocked = new Date() >= new Date(capsule.openingDateTime);
+    const openingTime = new Date(capsule.openingDateTime).getTime();
+    const isUnlocked = new Date() >= openingTime;
     
     if (!isUnlocked) {
         // Return only metadata
-        const { message, image, capsulePassword, ...metadata } = capsule.toObject();
+        const { message, image, ...metadata } = capsule.toObject();
         return res.send({ ...metadata, isLocked: true });
     }
 
@@ -44,23 +42,6 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     res.status(500).send(error);
   }
-});
-
-router.post('/verify-password', async (req, res) => {
-    try {
-        const { id, password } = req.body;
-        const capsule = await Capsule.findById(id);
-        if (!capsule) return res.status(404).send();
-
-        const isMatch = await bcrypt.compare(password, capsule.capsulePassword);
-        if (isMatch) {
-            res.send({ message: 'Verified', capsule });
-        } else {
-            res.status(401).send({ error: 'Invalid password' });
-        }
-    } catch (error) {
-        res.status(500).send(error);
-    }
 });
 
 router.delete('/:id', auth, async (req, res) => {

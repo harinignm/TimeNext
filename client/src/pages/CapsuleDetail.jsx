@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Lock, Clock, ArrowLeft } from 'lucide-react';
+import { Clock, ArrowLeft } from 'lucide-react';
 
 const CapsuleDetail = () => {
   const { id } = useParams();
@@ -11,10 +11,8 @@ const CapsuleDetail = () => {
   const navigate = useNavigate();
   const [capsule, setCapsule] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isVerifying, setIsVerifying] = useState(false);
   const [fetchError, setFetchError] = useState('');
+  const [timeLeft, setTimeLeft] = useState('');
 
   const fetchCapsule = async () => {
     try {
@@ -37,26 +35,24 @@ const CapsuleDetail = () => {
     fetchCapsule();
   }, [id]);
 
-  const handleVerifyPassword = async (e) => {
-    e.preventDefault();
-    setIsVerifying(true);
-    try {
-      const headers = {};
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
+  useEffect(() => {
+    if (!capsule || !capsule.openingDateTime) return;
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = new Date(capsule.openingDateTime).getTime() - now;
+      if (distance < 0) {
+        setTimeLeft('OPENED');
+        clearInterval(timer);
+      } else {
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        setTimeLeft(`${days}d ${hours}h ${minutes}m ${seconds}s`);
       }
-      const res = await axios.post(`${import.meta.env.VITE_API_URL || ''}/api/capsule/verify-password`, 
-        { id, password },
-        { headers }
-      );
-      setCapsule({ ...res.data.capsule, isLocked: false });
-    } catch (err) {
-      setError('Invalid password');
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [capsule]);
   if (loading) return <div className="pt-40 text-center">Loading Capsule...</div>;
   
   if (!capsule) {
@@ -105,36 +101,10 @@ const CapsuleDetail = () => {
               </div>
               <h2 className="text-3xl font-bold mb-4">{capsule.title}</h2>
               <p className="text-xl text-slate-400 mb-8">This message is traveling through time… ⏳</p>
-              <div className="p-4 bg-white/5 rounded-lg inline-block border border-white/10">
-                <p className="text-futuristic-blue font-mono">Locked until {new Date(capsule.openingDateTime).toLocaleString()}</p>
+              <div className="p-4 bg-white/5 rounded-lg inline-block border border-white/10 text-center">
+                <p className="text-futuristic-blue font-mono mb-2">Locked until {new Date(capsule.openingDateTime).toLocaleString()}</p>
+                <p className="text-2xl text-white font-bold tracking-widest">{timeLeft}</p>
               </div>
-            </motion.div>
-          ) : capsule.capsulePassword && capsule.isLocked !== false ? (
-            <motion.div 
-              key="password-protected"
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="glass-card p-12 max-w-md mx-auto text-center"
-            >
-              <Lock className="text-futuristic-blue w-12 h-12 mx-auto mb-6" />
-              <h2 className="text-2xl font-bold mb-6">Password Protected</h2>
-              <form onSubmit={handleVerifyPassword} className="space-y-4">
-                <input 
-                  type="password"
-                  placeholder="Enter capsule password"
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-futuristic-blue"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                {error && <p className="text-red-400 text-sm">{error}</p>}
-                <button 
-                  type="submit"
-                  disabled={isVerifying}
-                  className="w-full py-3 rounded-lg futuristic-gradient font-bold text-white"
-                >
-                  {isVerifying ? 'Verifying...' : 'Unlock Content'}
-                </button>
-              </form>
             </motion.div>
           ) : (
             <motion.div 

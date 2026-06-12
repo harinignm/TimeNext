@@ -14,7 +14,6 @@ const CreateCapsule = () => {
     openingTime: '12:00',
     ampm: 'AM',
     message: '',
-    capsulePassword: '',
   });
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -56,7 +55,8 @@ const CreateCapsule = () => {
       setSuccess(true);
       setTimeout(() => navigate('/vault'), 2000);
     } catch (err) {
-      alert('Failed to seal capsule');
+      console.error(err);
+      alert(`Failed to seal capsule: ${err.response?.data?.message || err.response?.data?.error || err.message}`);
     } finally {
       setLoading(false);
     }
@@ -142,24 +142,13 @@ const CreateCapsule = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-2">
-              <label className="text-sm text-futuristic-blue ml-1">Capsule Password (Optional)</label>
-              <input 
-                type="password"
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 outline-none focus:border-futuristic-blue"
-                value={formData.capsulePassword}
-                onChange={(e) => setFormData({...formData, capsulePassword: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm text-futuristic-blue ml-1">Attach Image (Optional)</label>
-              <input 
-                type="file" accept="image/*"
-                className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-futuristic-blue/10 file:text-futuristic-blue hover:file:bg-futuristic-blue/20"
-                onChange={handleImageChange}
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm text-futuristic-blue ml-1">Attach Image (Optional)</label>
+            <input 
+              type="file" accept="image/*"
+              className="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-futuristic-blue/10 file:text-futuristic-blue hover:file:bg-futuristic-blue/20"
+              onChange={handleImageChange}
+            />
           </div>
 
           <button 
